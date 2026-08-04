@@ -2,6 +2,8 @@
 
 **Run any side effect exactly once — even when 1,000 callers demand it at the same instant.**
 
+![1,000 concurrent duplicate charges, one execution](docs/storm.gif)
+
 ```
 ⚡ once — STORM DEMO
 1,000 concurrent attempts to charge order #777 ($49.00)
@@ -96,6 +98,7 @@ And we run it on our own production mailer — a double-approved send replays in
 ## Docs
 
 - [5-minute integration guide](docs/FIVE_MINUTE_GUIDE.md)
+- [Full API reference](docs/API.md)
 - [State machine — legal & illegal transitions](docs/STATE_MACHINE.md)
 - [What we store: result size + PII policy](docs/PII_AND_RESULT_POLICY.md)
 - [Architecture decisions](LOCKED.md)
