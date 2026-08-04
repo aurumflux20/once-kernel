@@ -1,0 +1,8 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+junit.xml
+dist/
+*.egg-info/
+.DS_Store
