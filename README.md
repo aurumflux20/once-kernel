@@ -18,9 +18,8 @@ elapsed             :   0.1s
 That's not a mock — it's a live attack you can run right now:
 
 ```bash
-git clone https://github.com/aurumflux20/once-kernel && cd once-kernel
-pip install -e . && python -m once.demo
-# (`pip install once-kernel` lands with the PyPI release this week)
+pip install once-kernel
+python -m once.demo
 ```
 
 ## The problem
