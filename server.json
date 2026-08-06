@@ -2,7 +2,7 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.aurumflux20/once-kernel",
   "title": "once",
-  "description": "Runs a side effect exactly once under retries, webhook redelivery, and concurrent workers. One caller is elected atomically; the rest receive the same result replayed. Reusing a key with a different payload hard-fails, and fence tokens stop a stale worker resurrecting after its lease is reclaimed.",
+  "description": "Run a side effect exactly once under retries, redelivery, and concurrent workers.",
   "version": "0.1.1",
   "repository": {
     "url": "https://github.com/aurumflux20/once-kernel",
