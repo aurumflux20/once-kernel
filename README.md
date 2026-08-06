@@ -99,6 +99,7 @@ And we run it on our own production mailer — a double-approved send replays in
 
 ## Docs
 
+- [Examples: FastAPI webhook · Celery task](examples/) — and the three decisions that actually take judgement (key, payload, store)
 - [5-minute integration guide](docs/FIVE_MINUTE_GUIDE.md)
 - [Full API reference](docs/API.md)
 - [State machine — legal & illegal transitions](docs/STATE_MACHINE.md)
