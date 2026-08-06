@@ -1,5 +1,7 @@
 # once
 
+<!-- mcp-name: io.github.aurumflux20/once-kernel -->
+
 **Run any side effect exactly once — even when 1,000 callers demand it at the same instant.**
 
 ![1,000 concurrent duplicate charges, one execution](docs/storm.gif)
