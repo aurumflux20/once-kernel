@@ -103,4 +103,12 @@ And we run it on our own production mailer — a double-approved send replays in
 - [What we store: result size + PII policy](docs/PII_AND_RESULT_POLICY.md)
 - [Architecture decisions](LOCKED.md)
 
+## Sibling project — EffectFence (Rust)
+
+[**EffectFence**](https://github.com/aurumflux20/effectfence) (`cargo add effectfence`) is the Rust half of the same idea: a causal fence for tool side effects, with content-addressed certificates and an MCP proxy mode — `effectfence wrap -- <any mcp server>` fences another server's tool calls with zero code change (proven against `once-mcp`).
+
+Use `once` when the side effect is Python and you want a durable store; use EffectFence when the fence lives in Rust or in front of an MCP server.
+
+## License
+
 Apache-2.0
