@@ -2,9 +2,9 @@
 Shared test bench.
 
 `once_factory` is parametrized over storage backends, so every test that uses
-it runs once against MemoryStore and once against real PostgreSQL. The chaos
-suite attacking both stores identically is the point: the Store protocol's
-guarantees are what's under test, not one implementation's luck.
+it runs against MemoryStore, a real on-disk SQLite file, and real PostgreSQL.
+The chaos suite attacking every store identically is the point: the Store
+protocol's guarantees are what's under test, not one implementation's luck.
 
 Postgres bench: set ONCE_TEST_PG_DSN (default: postgresql://localhost/once_test).
 If the database is unreachable, PG params skip with an explicit reason — they
@@ -53,8 +53,8 @@ def _pg_available() -> bool:
 _PG_OK = _pg_available()
 
 
-@pytest.fixture(params=["memory", "postgres"])
-def once_factory(request):
+@pytest.fixture(params=["memory", "sqlite", "postgres"])
+def once_factory(request, tmp_path_factory):
     """Returns factory(**once_kwargs) -> (Once, store, clock)."""
     backend = request.param
     if backend == "postgres" and not _PG_OK:
@@ -72,6 +72,15 @@ def once_factory(request):
         clock = FakeClock()
         if backend == "memory":
             store = MemoryStore(clock=clock)
+        elif backend == "sqlite":
+            from once.sqlite import SqliteStore
+
+            # A real file, not ":memory:" -- each connection to ":memory:"
+            # is a separate database, so the threads in the chaos suite
+            # would each get their own and prove nothing.
+            db = tmp_path_factory.mktemp("once") / f"{uuid.uuid4().hex[:12]}.db"
+            store = SqliteStore(str(db), clock=clock)
+            created.append(store)
         else:
             from once.pg import PostgresStore
 

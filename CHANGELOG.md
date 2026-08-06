@@ -1,7 +1,33 @@
 # Changelog
 
 ## [Unreleased]
-- Roadmap: PyPI publish + public repo · README storm GIF · API reference page · Redis store (v0.3) · outbox hook (v0.3)
+- Roadmap: Redis store (v0.3) · outbox hook (v0.3)
+
+## [0.2.0] — 2026-08-05
+
+**`SqliteStore` — durability without a database server.**
+
+`MemoryStore` dies with the process and protects nothing once a second
+worker exists; `PostgresStore` protects everything but wants a server. Most
+single-box deployments sat in the gap between them. `SqliteStore` closes it:
+durable across restarts, safe across processes (WAL mode), and it needs
+nothing installed — `sqlite3` is in the standard library.
+
+It is held to the same bar as the other stores rather than trusted: the
+shared chaos bench in `conftest.py` is now parametrized over
+memory / **sqlite** / postgres, so every forced-race, thread-storm,
+zombie-fencing and dead-lease-reclaim test attacks SQLite identically.
+Plus `test_sqlite_durability.py` for the claim the shared bench cannot
+make — that a completed effect is still recorded after the process dies,
+and that a worker which crashed mid-effect leaves a reclaimable lease
+rather than a wedged key. 65 tests, 0 skipped.
+
+Also in this release:
+- `examples/` — FastAPI webhook and Celery task, documenting the three
+  decisions that actually take judgement (key, payload, store).
+- Fixed `once.__version__` drifting behind `pyproject.toml`, and added a
+  test so it cannot drift again.
+- Ownership marker for the official MCP Registry listing.
 
 ## [0.1.0] — 2026-08-04
 

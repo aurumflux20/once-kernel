@@ -3,7 +3,7 @@
   "name": "io.github.aurumflux20/once-kernel",
   "title": "once",
   "description": "Run a side effect exactly once under retries, redelivery, and concurrent workers.",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "repository": {
     "url": "https://github.com/aurumflux20/once-kernel",
     "source": "github"
@@ -13,7 +13,7 @@
       "registryType": "pypi",
       "registryBaseUrl": "https://pypi.org",
       "identifier": "once-kernel",
-      "version": "0.1.1",
+      "version": "0.2.0",
       "transport": {
         "type": "stdio"
       }

@@ -51,7 +51,18 @@ def charge():
 result = o.run("pay:ord_1", {"order": "ord_1", "amount_cents": 4900}, charge)
 ```
 
-Multi-worker production — share state through the Postgres you already run:
+One box, several processes, no database server — SQLite, nothing to install:
+
+```python
+from once import Once
+from once.sqlite import SqliteStore
+
+o = Once(SqliteStore("/var/lib/myapp/once.db"))  # schema auto-created
+```
+
+Survives restarts and works across processes (WAL mode). The default `MemoryStore` does neither — it is per-process, so the moment you run a second worker each one keeps its own private idea of what already ran, and the guard silently stops guarding.
+
+Several machines — share state through the Postgres you already run:
 
 ```python
 from once import Once

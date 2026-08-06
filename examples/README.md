@@ -15,4 +15,10 @@ Wiring `once` in is one line. These are the parts that take judgement, and both 
 
 **2. What goes in the payload?** The payload is fingerprinted, so a key reused with different content hard-fails instead of quietly doing the wrong thing. Leave out anything that legitimately varies between retries of the same operation — delivery counters, receive timestamps — or every retry looks like a conflict.
 
-**3. Which store?** `MemoryStore` is per-process. It is fine for one web process and worthless the moment you run two, because each keeps its own private idea of what already ran. `PostgresStore` is the arbiter when more than one process can execute the effect.
+**3. Which store?** `MemoryStore` is per-process. It is fine for one web process and worthless the moment you run two, because each keeps its own private idea of what already ran. `SqliteStore` is durable and safe across processes on one machine, and needs nothing installed. `PostgresStore` is the arbiter once the effect can run on more than one machine.
+
+| Store | Survives restart | Multi-process | Multi-machine | Needs a server |
+|---|---|---|---|---|
+| `MemoryStore` | no | no | no | no |
+| `SqliteStore` | yes | yes (one box) | no | no |
+| `PostgresStore` | yes | yes | yes | yes |
