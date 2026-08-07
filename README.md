@@ -4,7 +4,7 @@
 
 **Run any side effect exactly once — even when 1,000 callers demand it at the same instant.**
 
-![1,000 concurrent duplicate charges, one execution](docs/storm.gif)
+![1,000 concurrent duplicate charges, one execution](https://raw.githubusercontent.com/aurumflux20/once-kernel/main/docs/storm.gif)
 
 ```
 ⚡ once — STORM DEMO
@@ -80,7 +80,7 @@ ao = AsyncOnce()
 result = await ao.run("pay:ord_1", payload, charge)
 ```
 
-**[→ The full 5-minute guide](docs/FIVE_MINUTE_GUIDE.md)**
+**[→ The full 5-minute guide](https://github.com/aurumflux20/once-kernel/blob/main/docs/FIVE_MINUTE_GUIDE.md)**
 
 ## What you can rely on
 
@@ -105,17 +105,17 @@ And we run it on our own production mailer — a double-approved send replays in
 ## Not this
 
 - Not a payment provider — it guards *your* calls to one
-- Not a workflow engine (no sagas, no multi-key transactions — [by decision](LOCKED.md))
+- Not a workflow engine (no sagas, no multi-key transactions — [by decision](https://github.com/aurumflux20/once-kernel/blob/main/LOCKED.md))
 - Not magic "exactly-once everywhere" — see the honest model above
 
 ## Docs
 
-- [Examples: FastAPI webhook · Celery task](examples/) — and the three decisions that actually take judgement (key, payload, store)
-- [5-minute integration guide](docs/FIVE_MINUTE_GUIDE.md)
-- [Full API reference](docs/API.md)
-- [State machine — legal & illegal transitions](docs/STATE_MACHINE.md)
-- [What we store: result size + PII policy](docs/PII_AND_RESULT_POLICY.md)
-- [Architecture decisions](LOCKED.md)
+- [Examples: FastAPI webhook · Celery task](https://github.com/aurumflux20/once-kernel/tree/main/examples/) — and the three decisions that actually take judgement (key, payload, store)
+- [5-minute integration guide](https://github.com/aurumflux20/once-kernel/blob/main/docs/FIVE_MINUTE_GUIDE.md)
+- [Full API reference](https://github.com/aurumflux20/once-kernel/blob/main/docs/API.md)
+- [State machine — legal & illegal transitions](https://github.com/aurumflux20/once-kernel/blob/main/docs/STATE_MACHINE.md)
+- [What we store: result size + PII policy](https://github.com/aurumflux20/once-kernel/blob/main/docs/PII_AND_RESULT_POLICY.md)
+- [Architecture decisions](https://github.com/aurumflux20/once-kernel/blob/main/LOCKED.md)
 
 ## Sibling project — EffectFence (Rust)
 
