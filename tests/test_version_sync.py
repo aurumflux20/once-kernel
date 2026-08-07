@@ -20,3 +20,22 @@ def test_dunder_version_matches_pyproject() -> None:
         f"once.__version__ ({once.__version__}) is out of sync with "
         f"pyproject.toml ({match.group(1)})"
     )
+
+
+def test_server_json_version_matches_pyproject() -> None:
+    """server.json carries its own copy of the version for the MCP Registry.
+
+    Nothing else checks it, and it drifted once already — which publishes a
+    registry listing pointing at a release that is not the current one.
+    """
+    import json
+
+    root = pathlib.Path(__file__).resolve().parent.parent
+    pyproject = (root / "pyproject.toml").read_text(encoding="utf-8")
+    expected = re.search(r'^version\s*=\s*"([^"]+)"', pyproject, re.MULTILINE).group(1)
+
+    doc = json.loads((root / "server.json").read_text(encoding="utf-8"))
+    assert doc["version"] == expected, "server.json .version is out of sync"
+    assert doc["packages"][0]["version"] == expected, (
+        "server.json .packages[0].version is out of sync"
+    )
