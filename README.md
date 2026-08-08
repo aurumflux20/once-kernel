@@ -123,6 +123,14 @@ And we run it on our own production mailer — a double-approved send replays in
 
 Use `once` when the side effect is Python and you want a durable store; use EffectFence when the fence lives in Rust or in front of an MCP server.
 
+## Commercial support
+
+Free and Apache-2.0, and staying that way. If you want help applying it to a
+codebase that already moves money — side-effecting paths inventoried,
+storm-tested, fenced, with a CI test that keeps them fenced — email
+**hello@aurumflux.co**. Details:
+[the Fence Audit](https://github.com/aurumflux20/effectfence/blob/main/SUPPORT.md).
+
 ## License
 
 Apache-2.0
