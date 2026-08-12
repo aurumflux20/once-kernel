@@ -18,7 +18,7 @@ import time
 
 import pytest
 
-from once import IdempotencyConflict, InProgressError, Once, Status
+from once import IdempotencyConflict, InProgressError, Once, ResultTooLarge, Status
 from once.kernel import MemoryStore, payload_hash
 
 
@@ -188,6 +188,71 @@ def test_allow_retry_failure_frees_the_key(once_factory):
 
     again = o.begin("job:retryable", {"x": 1})
     assert again.execute, "retryable failure must free the key"
+
+
+def test_effect_never_reruns_when_the_result_cannot_be_stored(once_factory):
+    """
+    The commit leg failed AFTER the effect fired.
+
+    An oversized result is a documented, first-class error (ResultTooLarge),
+    and every store can also refuse a result at write time. If run() leaves the
+    record IN_PROGRESS in that state, the lease dies and the next caller
+    reclaims and fires a side effect that ALREADY HAPPENED. Exactly-once must
+    survive its own commit failing: the attempt has to land in a terminal
+    state, not a reclaimable one.
+    """
+    o, _, clock = once_factory(lease_sec=30.0)
+    calls: list[int] = []
+
+    def effect():
+        calls.append(1)
+        return {"blob": "x" * 70_000}  # over MAX_RESULT_BYTES
+
+    with pytest.raises(ResultTooLarge):
+        o.run("commit:oversized", {"amount": 49}, effect, wait=False)
+    assert len(calls) == 1
+
+    clock.advance(31)  # lease dead — this is where a reclaimer takes over
+
+    with pytest.raises(RuntimeError) as caught:
+        o.run("commit:oversized", {"amount": 49}, effect, wait=False)
+    assert "could not be stored" in str(caught.value)
+
+    assert len(calls) == 1, (
+        f"side effect ran {len(calls)}× after a failed commit — "
+        "duplicate execution"
+    )
+
+
+def test_failed_commit_does_not_mask_the_original_error(once_factory):
+    """
+    Cleanup runs while an exception is already in flight. A zombie worker's
+    cleanup CAS legitimately fails (it is fenced out), and if that raises it
+    replaces the real cause with a bookkeeping error — the caller then debugs
+    the wrong thing entirely.
+    """
+    o, _, clock = once_factory(lease_sec=30.0)
+
+    class CardDeclined(Exception):
+        pass
+
+    def effect():
+        raise CardDeclined("issuer said no")
+
+    out = o.begin("commit:mask", {"amount": 49})
+    clock.advance(31)
+    o.begin("commit:mask", {"amount": 49})  # reclaims; `out` is now a zombie
+
+    # The zombie's own cleanup is fenced out, but the caller must still see
+    # the reason its call failed.
+    with pytest.raises(CardDeclined):
+        try:
+            effect()
+        except Exception as e:
+            o._best_effort_fail(
+                "commit:mask", out.record.fence_token, str(e), ttl=None, allow_retry=True
+            )
+            raise
 
 
 # ---------------------------------------------------------------------------

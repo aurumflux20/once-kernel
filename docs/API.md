@@ -118,7 +118,7 @@ Plain `str` is accepted everywhere.
 | `IdempotencyConflict` | Same key, different payload | Bug or attack — investigate; never retry blindly |
 | `InProgressError` | Live lease held elsewhere (`retry_after_ms` attached) | Wait and re-`begin`, or use `wait=True` |
 | `WaitTimeout` | `wait=True` patience exhausted | Surface to caller; the action may still complete |
-| `ResultTooLarge` | Result exceeds the size policy | Store a pointer (id/URL), not the blob |
+| `ResultTooLarge` | Result exceeds the size policy | Store a pointer (id/URL), not the blob. Raised from `run()`, the effect already ran and the attempt is recorded as a **terminal** failure — retry under a new key, never the same one |
 | `RuntimeError` ("fenced out") | Your lease was taken over | STOP; another attempt owns the action |
 
 ---

@@ -626,6 +626,35 @@ class Once:
         if not ok:
             raise RuntimeError(f"once: fail fenced out key={key_s!r}")
 
+    def _best_effort_fail(
+        self,
+        key: str | IdempotencyKey,
+        fence_token: str,
+        error: str,
+        *,
+        ttl: Optional[float],
+        allow_retry: bool,
+    ) -> bool:
+        """
+        Release/terminate a reservation while another exception is in flight.
+
+        Never raises. Cleanup runs inside an `except` block, and a zombie
+        worker's CAS legitimately fails because it is fenced out — letting that
+        surface would replace the caller's real error (the declined card, the
+        oversized result) with a bookkeeping one, and send them debugging the
+        wrong thing.
+        """
+        try:
+            return self.store.cas_fail(
+                key.value if isinstance(key, IdempotencyKey) else IdempotencyKey(key).value,
+                fence_token,
+                error[:MAX_ERROR_BYTES],
+                ttl_sec=self.default_ttl_sec if ttl is None else ttl,
+                allow_retry=allow_retry,
+            )
+        except Exception:
+            return False
+
     def run(
         self,
         key: str | IdempotencyKey,
@@ -660,10 +689,12 @@ class Once:
             try:
                 result = fn()
             except Exception as e:
-                self.fail(key, out.record.fence_token, str(e), allow_retry=True)
+                self._best_effort_fail(
+                    key, out.record.fence_token, str(e),
+                    ttl=ttl_sec, allow_retry=True,
+                )
                 raise
-            self.complete(key, out.record.fence_token, result, ttl_sec=ttl_sec)
-            return result
+            return self._commit(key, out.record.fence_token, result, ttl_sec=ttl_sec)
 
         last_err: Optional[Exception] = None
         for _ in range(max(1, retry_in_progress)):
@@ -682,14 +713,54 @@ class Once:
             try:
                 result = fn()
             except Exception as e:
-                self.fail(key, out.record.fence_token, str(e), allow_retry=True)
+                self._best_effort_fail(
+                    key, out.record.fence_token, str(e),
+                    ttl=ttl_sec, allow_retry=True,
+                )
                 raise
 
-            self.complete(key, out.record.fence_token, result, ttl_sec=ttl_sec)
-            return result
+            return self._commit(key, out.record.fence_token, result, ttl_sec=ttl_sec)
 
         assert last_err is not None
         raise last_err
+
+    def _commit(
+        self,
+        key: str | IdempotencyKey,
+        fence_token: str,
+        result: Any,
+        *,
+        ttl_sec: Optional[float],
+    ) -> Any:
+        """
+        Record the result of an effect that HAS ALREADY RUN.
+
+        The dangerous case is not `complete()` failing — it is what the record
+        looks like afterwards. An oversized result raises `ResultTooLarge`, and
+        a store can refuse the value at write time (every durable adapter
+        serialises it). Leaving the record IN_PROGRESS there means the lease
+        dies and the next caller reclaims and fires the effect a SECOND time —
+        the one outcome this library exists to prevent.
+
+        So a commit that cannot be recorded is terminal, not retryable: the
+        attempt is marked FAILED with `allow_retry=False`, later callers replay
+        that failure instead of re-executing, and the original error is what
+        the caller sees. Recovering means a new idempotency key — which is
+        correct, because the caller has to decide whether the effect that
+        already happened should happen again.
+        """
+        try:
+            self.complete(key, fence_token, result, ttl_sec=ttl_sec)
+        except Exception as e:
+            self._best_effort_fail(
+                key,
+                fence_token,
+                f"once: effect executed but result could not be stored: {e}",
+                ttl=ttl_sec,
+                allow_retry=False,
+            )
+            raise
+        return result
 
 
 def _assert_result_size(result: Any) -> None:

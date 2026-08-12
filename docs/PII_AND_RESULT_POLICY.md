@@ -23,6 +23,13 @@ Security reviewers ask two questions. This page answers both.
 
 Oversized results → `ResultTooLarge` at `complete()` time. **Store a pointer** (object key, message id) in `result`, not the full email body.
 
+**Inside `run()` this is terminal, by design.** The effect has already happened
+by the time the result is rejected, so the attempt is recorded as a terminal
+failure rather than left reclaimable — otherwise the lease would die and the
+next caller would fire the effect a second time. Later calls on that key replay
+the failure; recovering means a **new idempotency key**, because only you can
+decide whether an effect that already ran should run again.
+
 ## Recommended patterns
 
 **Emails (nova_mailer dogfood):**

@@ -1,6 +1,28 @@
 # Changelog
 
 ## [Unreleased]
+
+**Fixed — a failed commit could re-run an effect that already ran.**
+
+`run()` only ever converted an exception from *your function* into a released
+reservation. If the function succeeded but recording the result failed, the
+record was left `IN_PROGRESS` — so the lease expired, the next caller
+reclaimed the key, and the side effect fired a **second** time. Reachable on
+an ordinary mistake: `ResultTooLarge` is a documented, first-class exception,
+and every durable store can also refuse a value at write time.
+
+A commit that cannot be recorded is now **terminal**: the attempt is marked
+`FAILED` with `allow_retry=False`, later callers replay that failure instead
+of re-executing, and the caller still sees the original error. Recovering
+means a new idempotency key — the choice to run an already-run effect again
+belongs to the caller, not to a lease timeout. Applies to `Once.run()` and
+`AsyncOnce.run()`.
+
+Also: cleanup after a failure no longer masks the real error. A zombie
+worker's release CAS legitimately fails because it is fenced out, and that
+bookkeeping error used to replace the declined card / oversized result the
+caller actually needed to see.
+
 - Roadmap: Redis store (v0.3) · outbox hook (v0.3)
 
 ## [0.2.0] — 2026-08-05

@@ -138,8 +138,17 @@ class AsyncOnce:
                 if asyncio.iscoroutine(result):
                     result = await result
         except Exception as e:
-            await self.fail(key, out.record.fence_token, str(e), allow_retry=True)
+            await asyncio.to_thread(
+                self._once._best_effort_fail,
+                key, out.record.fence_token, str(e),
+                ttl=ttl_sec, allow_retry=True,
+            )
             raise
 
-        await self.complete(key, out.record.fence_token, result, ttl_sec=ttl_sec)
-        return result
+        # Commit through the sync kernel's `_commit`, so a result that cannot
+        # be stored lands in a TERMINAL state here too. Leaving it IN_PROGRESS
+        # would let the lease die and a reclaimer re-run an effect that already
+        # ran — see Once._commit.
+        return await asyncio.to_thread(
+            self._once._commit, key, out.record.fence_token, result, ttl_sec=ttl_sec
+        )
