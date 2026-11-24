@@ -35,7 +35,7 @@ Most teams hand-roll an idempotency table — and most of those are [quietly bro
 1. **Atomic leader election** — concurrent duplicates can't all pass the check; exactly one executes, the rest coalesce onto its result.
 2. **Payload fingerprinting (RFC 8785)** — same key with a *different* body is a hard `IdempotencyConflict`, never someone else's cached answer.
 3. **Fence tokens + generations** — a crashed worker's lease can be taken over, and when the "dead" worker wakes up late, it is *locked out* of corrupting the record.
-4. **Honest failure states** — a failed attempt frees the key for retry; an unknown outcome never silently re-runs.
+4. **Honest failure states** — if the effect ran but its result could not be stored, the key goes terminal and later callers get that error, not a second run. If your function raises, the key is freed and a retry may run it again. That includes a timeout, where the effect may already have landed. To stop that retry, use the low-level `begin`/`complete` API and call `fail(..., allow_retry=False)`.
 
 ## Use it
 
@@ -89,10 +89,10 @@ result = await ao.run("pay:ord_1", payload, charge)
 | Same key + same payload, again | The stored result — **no second execution** |
 | Same key + **different** payload | `IdempotencyConflict` — never a silent wrong answer |
 | 1,000 concurrent first requests | **One** executor; everyone else coalesces (`wait=True`) or is told to wait |
-| Executing worker dies | Lease expires → another caller takes over |
+| Executing worker dies | Lease expires → another caller takes over and runs your function again (`generation` +1) |
 | "Dead" worker wakes up late | **Fenced out** — cannot complete, cannot fail, cannot corrupt |
 | Long job outliving its lease | `heartbeat()` keeps it protected |
-| Your function raises | Key freed — a later retry may execute |
+| Your function raises (a timeout too) | Key freed — a later retry may execute |
 
 **The honest model** (put this on a poster): **exactly-once execution + at-least-once result delivery.** True network exactly-once is physically impossible — libraries claiming it are lying to you. We execute once and re-*deliver* the answer as many times as asked.
 

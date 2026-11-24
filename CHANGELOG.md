@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+**Docs — the README no longer says an unknown outcome never re-runs.**
+
+`run()` frees the key whenever your function raises, a timeout included,
+and a lease takeover after a worker dies runs the function again. The
+README now says so and points to `fail(..., allow_retry=False)` for the
+case where the effect may already have landed. No code change.
+
 **Fixed — a failed commit could re-run an effect that already ran.**
 
 `run()` only ever converted an exception from *your function* into a released
